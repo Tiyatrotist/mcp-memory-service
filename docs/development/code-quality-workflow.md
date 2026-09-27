@@ -555,3 +555,23 @@ pyscn analyze --exclude "tests/*,scripts/*"
 **Document Version History:**
 
 - v1.0.0 (2025-11-24): Initial comprehensive documentation with pyscn integration
+
+
+### Intentional breaking changes
+
+Check 4 still reports breaking API changes, but a deliberate contract change can be
+acknowledged with a reason instead of forcing the quality gate to stay red. Put
+the following marker in the pull request body or a commit message:
+
+```text
+Breaking-Change-Acknowledged: explain why this intentional break is required
+```
+
+The reason is printed in the gate output for review. A bare marker is not accepted.
+For a pre-commit `--staged` run, where no PR body exists yet, provide the same
+reason explicitly:
+
+```bash
+MCP_BREAKING_CHANGE_ACKNOWLEDGED="security advisory response hardening" \
+  bash scripts/pr/quality_gate.sh --staged
+```
