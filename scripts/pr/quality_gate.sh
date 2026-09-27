@@ -18,6 +18,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LLM_HELPER="$SCRIPT_DIR/lib/llm_prompt.py"
+BREAKING_ACK_HELPER="$SCRIPT_DIR/lib/breaking_change_ack.py"
 EXIT_SKIPPED=3
 
 MODE=""
@@ -275,9 +276,25 @@ Changes:
 $(echo "$api_changes" | head -200)")
 
     if echo "$breaking_result" | grep -q "^BREAKING_CHANGE_DETECTED:"; then
-        warnings+=("Potential breaking changes detected: $breaking_result")
-        if [ $exit_code -eq 0 ]; then
-            exit_code=1
+        breaking_ack_context=""
+        if [ "$MODE" = "pr" ]; then
+            pr_body=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""' 2>/dev/null || true)
+            commit_messages=$(git log --format=%B "origin/main...origin/$pr_head_branch" 2>/dev/null || true)
+            breaking_ack_context="$pr_body
+$commit_messages"
+        fi
+
+        if breaking_ack_reason=$(printf '%s\n' "$breaking_ack_context" | python3 "$BREAKING_ACK_HELPER"); then
+            echo "Breaking change acknowledged: $breaking_ack_reason"
+            echo "The finding remains visible, but this deliberate contract change is not blocking."
+        else
+            warnings+=("Potential breaking changes detected: $breaking_result")
+            if [ $exit_code -eq 0 ]; then
+                exit_code=1
+            fi
+            echo "To acknowledge an intentional break, add 'Breaking-Change-Acknowledged: <reason>'"
+            echo "to the PR body or a commit message. In --staged mode set"
+            echo "MCP_BREAKING_CHANGE_ACKNOWLEDGED='<reason>'."
         fi
     fi
 else
