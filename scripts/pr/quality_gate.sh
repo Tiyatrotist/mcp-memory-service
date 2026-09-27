@@ -279,7 +279,7 @@ $(echo "$api_changes" | head -200)")
         breaking_ack_context=""
         if [ "$MODE" = "pr" ]; then
             pr_body=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""' 2>/dev/null || true)
-            commit_messages=$(git log --format=%B "origin/main...origin/$pr_head_branch" 2>/dev/null || true)
+            commit_messages=$(git log --format=%B "origin/main..origin/$pr_head_branch" 2>/dev/null || true)
             breaking_ack_context="$pr_body
 $commit_messages"
         fi
